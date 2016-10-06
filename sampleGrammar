@@ -1,0 +1,21 @@
+oper
+   : load   reg     into reg
+   | loadI  con     into reg
+   | store  reg     into reg
+   | add    reg reg into reg
+   | sub    reg reg into reg
+   | mult   reg reg into reg
+   | lshift reg reg into reg
+   | rshift reg reg into reg
+   | output con
+   | nop
+   ;
+
+list
+   : oper list
+   | epsilon
+   ;
+
+block
+   : list
+   ;
