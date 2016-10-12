@@ -11,10 +11,16 @@ symbolNames = ["NONE/ERROR", "SEMICOLON", "DERIVES", "ALSODERIVES", "EPSILON", "
 
 symbolPending = None
 
+# Of form: {NonTerm1 : [NT1Prod1, NT1Prod2, ...]; NonTerm2 : [...]; ...}
+productionsIR = {}
+
 # For debugging only
 testGrammerSymbols = [SYMBOL, DERIVES, SYMBOL, SYMBOL, SYMBOL, ALSODERIVES, SYMBOL, SYMBOL, ALSODERIVES, SYMBOL, SEMICOLON, SYMBOL, DERIVES, SYMBOL, SYMBOL, ALSODERIVES, SYMBOL, SYMBOL, SYMBOL, SEMICOLON, EOF]
 i = 0
 
+"""
+Word pairs of the form: [grammaticalSymbol, lexeme]
+"""
 def getNextWord():
     global symbolPending
     global testGrammerSymbols
@@ -24,7 +30,7 @@ def getNextWord():
     if symbolPending:
         retSym = symbolPending
         symbolPending = None
-        print "Returning: " + symbolNames[retSym]
+        print "Returning: " + symbolNames[retSym[0]]
         return retSym
     else:
         #         Debugging only
@@ -33,30 +39,34 @@ def getNextWord():
         i = i + 1
         return retSym
         """
-        retSym = readNextWord()[1]
-        print "Returning: " + symbolNames[retSym]
+        retSym = readNextWord()
+        print "Scanner gave us back: " + str(retSym)
+        print "Returning: " + symbolNames[retSym[0]]
         return retSym
 
     return 1
 
-def SymbolList(curWord):
+
+def SymbolList(curWord, listSoFar):
+    global symbolPending
+    global productionsIR
+
     """
     SL->SYMBOL SL
         | E
     Not what would be produced w/ the algorithm, but very obviously
     equivalent
     """
-    global symbolPending
+    if curWord[0] == SYMBOL:
+        listSoFar.append(curWord[1])
+        return SymbolList(getNextWord(), listSoFar)
 
-    if curWord == SYMBOL:
-        return SymbolList(getNextWord())
-
-    print "Sym list: " + symbolNames[curWord]
+    #print "Sym list: " + symbolNames[curWord[0]]
 
     # Empty case, has to be the start of another list or ;
-    if curWord == SEMICOLON or curWord == ALSODERIVES:
+    if curWord[0] == SEMICOLON or curWord[0] == ALSODERIVES:
         symbolPending = curWord
-        return True
+        return [True, listSoFar]
 
 
 def RightHandSide(curWord):
@@ -66,27 +76,36 @@ def RightHandSide(curWord):
     """
     global symbolPending
 
-    print "RHS, cur: " + symbolNames[curWord]
+    #print "RHS, cur: " + symbolNames[curWord[0]]
 
-    return curWord == EPSILON or SymbolList(curWord)
+    # Need to return whether it's a valid RHS, and if so what the full RHS is
+    if curWord[0] == EPSILON:
+        return [True, [EPSILON]]
+    thisList = []
+    sl = SymbolList(curWord, thisList)
+    if sl[0]:
+        return sl
 
-    return True
+    return False
 
-def ProductionSetPrime(curWord):
+def ProductionSetPrime(curWord, nonTerm):
     """
     PS'->ALSODERIVES RHS PS'
         | E
     """
     global symbolPending
 
-    if curWord == ALSODERIVES:
-        if RightHandSide(getNextWord()):
-            return ProductionSetPrime(getNextWord())
+    if curWord[0] == ALSODERIVES:
+        rhs = RightHandSide(getNextWord())
+        if rhs[0]:
+            # Add this production to IR
+            productionsIR[nonTerm].append(rhs[1])
+            return ProductionSetPrime(getNextWord(), nonTerm)
         else:
             return False
-    print "empty case: " + symbolNames[curWord]
+    print "empty case: " + symbolNames[curWord[0]]
     # Empty case, if no other things being derived, should be a SEMICOLON
-    if curWord == SEMICOLON:
+    if curWord[0] == SEMICOLON:
         symbolPending = curWord
         return True
 
@@ -96,10 +115,18 @@ def ProductionSet(curWord):
     """
     global symbolPending
 
-    if curWord == SYMBOL:
-        if getNextWord() == DERIVES:
-            if RightHandSide(getNextWord()):
-                return ProductionSetPrime(getNextWord())
+    if curWord[0] == SYMBOL:
+        # Make entry for this non terminal in IR
+        curNonTerm = curWord[1]
+        productionsIR[curNonTerm] = []
+
+        if getNextWord()[0] == DERIVES:
+            # Expect RHS to return a tuple of [T/F, [symb1, symb2, symb3]]
+            rhs = RightHandSide(getNextWord())
+            if rhs[0]:
+                # Add this rhs as a production of curNonTerm, have PS' do the same
+                productionsIR[curNonTerm].append(rhs[1])
+                return ProductionSetPrime(getNextWord(), curNonTerm)
     return False
 
 
@@ -111,12 +138,12 @@ def ProductionListPrime(curWord):
     global symbolPending
 
     if(ProductionSet(curWord)):
-        if getNextWord() != SEMICOLON:
+        if getNextWord()[0] != SEMICOLON:
             return False
         return ProductionListPrime(getNextWord())
 
     # Empty case, last item of full list is EOF
-    return curWord == EOF
+    return curWord[0] == EOF
 
 def ProductionList(curWord):
     """
@@ -126,7 +153,7 @@ def ProductionList(curWord):
 
     if not ProductionSet(curWord):
         return False
-    if getNextWord() != SEMICOLON:
+    if getNextWord()[0] != SEMICOLON:
         return False
     return ProductionListPrime(getNextWord())
 
@@ -137,9 +164,22 @@ def Grammar():
     return ProductionList(getNextWord())
 
 
-openFile("mbnf.ll1")
-print Grammar()
-print getSymbolsToIDs().keys()
+def parseFile(fileName):
+    global productionsIR
+
+    openFile(fileName)
+    # If it's a valid grammar, return IR
+    if Grammar():
+        return productionsIR
+    else:
+        print "\n\nError! Parser found invalid grammar\n\n"
+        return False
+
+
+
+#openFile("mbnf.ll1")
+#print Grammar()
+#print getSymbolsToIDs().keys()
 
 #print "hello wrorld"
 #print ProductionList(getNextWord())
