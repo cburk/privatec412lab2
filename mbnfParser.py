@@ -9,7 +9,6 @@ EOF=6
 
 symbolNames = ["NONE/ERROR", "SEMICOLON", "DERIVES", "ALSODERIVES", "EPSILON", "SYMBOL", "EOF"]
 
-nonterms=[1, 2, 3]
 symbolPending = None
 
 # For debugging only
