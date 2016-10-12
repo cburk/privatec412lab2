@@ -31,10 +31,11 @@ def getNextWord():
         """
         retSym = testGrammerSymbols[i]
         i = i + 1
-        print "Returning: " + symbolNames[retSym]
         return retSym
         """
-        return readNextWord()
+        retSym = readNextWord()[1]
+        print "Returning: " + symbolNames[retSym]
+        return retSym
 
     return 1
 
@@ -136,7 +137,7 @@ def Grammar():
     return ProductionList(getNextWord())
 
 
-openFile("sampleGrammar")
+openFile("mbnf.ll1")
 print Grammar()
 print getSymbolsToIDs().keys()
 

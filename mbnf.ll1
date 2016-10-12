@@ -1,0 +1,18 @@
+grammar : PL;
+
+PL : PS SEMICOLON PLPrime;
+
+PLPrime : PS SEMICOLON PLPrime
+    | EPSILON;
+
+PS : SYMBOL DERIVES RHS PSPrime;
+
+PSPrime : ALSODERIVES RHS PSPrime
+    | EPSILON;
+
+RHS : SL
+    | EPSILON;
+
+SL : SYMBOL SL
+    | EPSILON;
+
