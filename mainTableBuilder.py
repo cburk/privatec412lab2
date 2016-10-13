@@ -95,7 +95,7 @@ Main functionality to build the table
 # Current IR: {NonTerm1 : [NT1Prod1, NT1Prod2, ...]; NonTerm2 : [...]; ...}
 # W/ ^, keyset is nonterminals, can access productions by NonTerminal ID
 
-productions = parseFile("iloc.ll1")
+productions = parseFile("factor.ll1")
 symbToID = getSymbolsToIDs()
 IDToSymb = getIDsToSymbols()
 
