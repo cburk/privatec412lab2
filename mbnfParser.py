@@ -30,7 +30,7 @@ def getNextWord():
     if symbolPending:
         retSym = symbolPending
         symbolPending = None
-        print "Returning: " + symbolNames[retSym[0]]
+        #print "Returning: " + symbolNames[retSym[0]]
         return retSym
     else:
         #         Debugging only
@@ -40,8 +40,8 @@ def getNextWord():
         return retSym
         """
         retSym = readNextWord()
-        print "Scanner gave us back: " + str(retSym)
-        print "Returning: " + symbolNames[retSym[0]]
+        #print "Scanner gave us back: " + str(retSym)
+        #print "Returning: " + symbolNames[retSym[0]]
         return retSym
 
     return 1
@@ -103,7 +103,7 @@ def ProductionSetPrime(curWord, nonTerm):
             return ProductionSetPrime(getNextWord(), nonTerm)
         else:
             return False
-    print "empty case: " + symbolNames[curWord[0]]
+    #print "empty case: " + symbolNames[curWord[0]]
     # Empty case, if no other things being derived, should be a SEMICOLON
     if curWord[0] == SEMICOLON:
         symbolPending = curWord

@@ -86,7 +86,7 @@ def readNextWord():
                 IDToSymbol[nextID] = symbolName
                 nextID += 1
 
-            print "Scanner found symbol: " + symbolName
+            #print "Scanner found symbol: " + symbolName
 
             return [SYMBOL, symbolToID[symbolName]]
         else:
@@ -96,6 +96,7 @@ def getSymbolsToIDs():
     global symbolToID
 
     symbolToID["EPSILON"] = EPSILON
+    symbolToID["EOF"] = EOF
 
     return symbolToID
 
@@ -103,5 +104,6 @@ def getIDsToSymbols():
     global IDToSymbol
 
     IDToSymbol[EPSILON] = "EPSILON"
+    IDToSymbol[EOF] = "EOF"
 
     return IDToSymbol
