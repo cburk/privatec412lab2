@@ -27,8 +27,6 @@ def readNextWord():
     global symbolToID
     global nextID
 
-    print "DANK MEMES"
-
     thisChar = "asdf"
     while thisChar:
         # SYMBOL path can read one over the end, need to keep track
@@ -55,7 +53,6 @@ def readNextWord():
             strThisFar = thisChar
             thisChar = file.read(1)
             strThisFar += thisChar
-            print "E, found: " + thisChar
             if thisChar == 'P' or thisChar == 'p':
                 thisChar = file.read(1)
                 strThisFar += thisChar

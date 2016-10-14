@@ -8,6 +8,61 @@ EPSILON=4
 SYMBOL=5
 EOF=6
 
+def findGoalSymbol(productions, NT):
+    candidates = NT
+    for A in productions:
+        for B in productions[A]:
+            candidates = candidates.difference(set(B))
+            if len(candidates) == 1:
+                return candidates.pop()
+
+    return "Error!"
+
+#Convenience function, true if set A has B
+def SetAContainsMemberB(A, B):
+    return len(A.intersection(set([B]))) > 0
+
+# S is the goal symbol, still need to find
+def getFollows(nonTerminals, terminals, productions, FIRST, IDToSymb, S):
+    FOLLOW = {}
+    for A in nonTerminals:
+        FOLLOW[A] = set()
+    # TODO: critical assumption, goal (S) is a nonterminal.  Seems right tho...
+    # Answer: yep, as per piazza it's just nonterm not on the right side of anything...
+    FOLLOW[S].add(EOF)
+
+    changing = True
+    while changing:
+        changing = False
+
+        for A in productions:
+            Bs = productions[A]
+            for B in Bs:
+                # Think this should be here, new trailer for
+                # each of A's different productions
+                TRAILER = FOLLOW[A]
+
+                k = len(B)
+                # Go over the individual symbols in each rhs r->l
+                for i in range(k-1, -1, -1):
+                    if SetAContainsMemberB(nonTerminals, B[i]):
+
+                        possibleNewFollows = FOLLOW[B[i]].union(TRAILER)
+                        if len(possibleNewFollows) != len(FOLLOW[B[i]]):
+                            changing=True
+                            FOLLOW[B[i]] = possibleNewFollows
+
+                        #Equivalent to lines in algorithm
+                        if SetAContainsMemberB(FIRST[B[i]], EPSILON):
+                            TRAILER = TRAILER.union(FIRST[B[i]].difference(set([EPSILON])))
+                        else:
+                            TRAILER = FIRST[B[i]]
+
+                    else:
+                        TRAILER = set([B[i]])
+
+    return FOLLOW
+
 def printFirsts(firsts, IDToSymb):
     for symbol in firsts:
         firstStr = "[ "
@@ -15,15 +70,18 @@ def printFirsts(firsts, IDToSymb):
             firstStr += IDToSymb[symbolsFirsts] + " , "
         print IDToSymb[symbol] + " : " + firstStr[:-2] + "]"
 
+#def printFollows(follows, IDToSymb):
+
+
 #TODO: terminals shouldn't have EOF and EPSILON
 #TODO: Also making assumption EPSILON = empty
 def getFirsts(nonTerminals, terminals, productions, IDToSymb):
     FIRST = {}
     # ACTUAL TODO: might need to add in epsilon and eof
-    allSymbs = terminals.union(nonTerminals).union(set([EPSILON, EOF]))
+    allSymbs = terminals.union(nonTerminals).union(set([EPSILON]))
 
     # TODO: Should be terminals U EOF U epsilon
-    for a in terminals.union(set([EOF, EPSILON])):
+    for a in terminals.union(set([EPSILON])):
         FIRST[a] = set([a])
     for A in nonTerminals:
         FIRST[A] = set()
@@ -37,15 +95,12 @@ def getFirsts(nonTerminals, terminals, productions, IDToSymb):
             # B is each production list
             for B in AsProductions:
                 print "\n"
-                print "A: " + IDToSymb[A]
 
                 # If there's a Bi in T U NT, so I think just not empty or EOF
                 if len(set(B).intersection(allSymbs)) > 0:
-                    print "In here!"
 
                     # Make rhs = all first's of b0->bn where all b0->bn-1 have epsilon in firsts, i.e. could be empty
                     rhs = FIRST[B[0]].difference(set([EPSILON]))
-                    print "Len rhs: " + str(len(rhs))
                     i = 0
                     # means if FIRST[B[i]].contains(EPSILON) and B[i} exists:
                     while len(FIRST[B[i]].intersection(set([EPSILON]))) > 0 and i < len(B) - 1:
@@ -122,5 +177,13 @@ printSymbSet(terminals, IDToSymb)
 
 firsts = getFirsts(nonTerminals, terminals, productions, IDToSymb)
 
-print "Found firsts: "
+print "===================\n\nFound firsts: \n\n===================\n"
 printFirsts(firsts, IDToSymb)
+
+goalSymbol = findGoalSymbol(productions, nonTerminals)
+print "\n\nFound goal symbol: " + IDToSymb[goalSymbol]
+
+follows = getFollows(nonTerminals, terminals, productions, firsts, IDToSymb, goalSymbol)
+print "===================\n\nFound follows: \n\n===================\n"
+printFirsts(follows, IDToSymb)
+
