@@ -7,6 +7,85 @@ ALSODERIVES=3
 EPSILON=4
 SYMBOL=5
 EOF=6
+ERROR = -1
+
+def printTable(t, IDToSymb, terms):
+    termsOrdered = list(terms)
+    #TODO: Need to append EOF probably
+    IDToSymb[ERROR] = '--'
+
+    print "table:"
+    for nt in t:
+        prStr = IDToSymb[nt] + ": {"
+        for term in termsOrdered:
+            prStr += IDToSymb[term]
+            if t[nt][term] == ERROR:
+                prStr += ": --, "
+            else:
+                prStr += ": " + str(t[nt][term]) + ", "
+        print prStr[:-2] + "}"
+
+
+def getTable(nonTerminals, terminals, firstPlus):
+    Table = {}
+    for A in nonTerminals:
+        Table[A] = {}
+        # TODO: Need to do terminals + EOF?
+        for w in terminals:
+            Table[A][w] = ERROR
+
+        for producedByAID in firstPlus[A]:
+            #TODO: I think these should all actually be terminals, but maybe need to check
+            for w in firstPlus[A][producedByAID]:
+                Table[A][w] = producedByAID
+            # I think we've got that covered
+            #if eof
+
+    return Table
+
+
+def printFirstPlus(firstPlus, productionsOrdered, IDToSymb):
+    for i in range(len(productionsOrdered)):
+        curProd = productionsOrdered[i]
+        prStr = str(i) + " : " + IDToSymb[curProd[0]] + " -> "
+        for bI in curProd[1:]:
+            prStr += IDToSymb[bI] + ", "
+        print prStr
+        prStr = "\t"
+        for fpSymb in firstPlus[curProd[0]][i]:
+            prStr += IDToSymb[fpSymb] + ", "
+        print prStr
+
+def printProductionsOrdered(productionsOrdered, IDToSymb):
+    for i in range(len(productionsOrdered)):
+        thisProd = productionsOrdered[i]
+        printStr = str(i) + ": {" + IDToSymb[thisProd[0]] + ": ["
+        for j in range(len(thisProd) - 1):
+            printStr += IDToSymb[thisProd[1+j]] + ", "
+        print printStr[:-2] + "]}"
+
+# First+ of form: {A:{B:(nt1, nt2, ...), B2:(...
+# (Sets, not lists.  Not problematic tho, only productions care about ordering)
+
+# New issue: what does firstplus of B mean?  Is it for entire production, or just first element?
+def getFirstPlus(productionsOrdered, FIRST, FOLLOW, nonTerminals):
+    FIRSTPLUS = {}
+    for nt in nonTerminals:
+        FIRSTPLUS[nt] = {}
+
+    for i in range(len(productionsOrdered)):
+        Oprod = productionsOrdered[i]
+        A = Oprod[0]
+        B = Oprod[1:]
+
+        if not EPSILON in B:
+            #Q: How to get FIRST[B] where B=B1,B2,B3,...
+            #TODO: BIG assumption, saying FIRST[B] = FIRST[B0]
+            FIRSTPLUS[A][i] = FIRST[B[0]]
+        else:
+            FIRSTPLUS[A][i] = FIRST[B[0]].union(FOLLOW[A])
+
+    return FIRSTPLUS
 
 def findGoalSymbol(productions, NT):
     candidates = NT
@@ -46,8 +125,12 @@ def getFollows(nonTerminals, terminals, productions, FIRST, IDToSymb, S):
                 # Go over the individual symbols in each rhs r->l
                 for i in range(k-1, -1, -1):
                     if SetAContainsMemberB(nonTerminals, B[i]):
-
                         possibleNewFollows = FOLLOW[B[i]].union(TRAILER)
+
+                        if(IDToSymb[B[i]]=='Stmt'):
+                            print "Setting for stmt:"
+                            print "Trailer"
+
                         if len(possibleNewFollows) != len(FOLLOW[B[i]]):
                             changing=True
                             FOLLOW[B[i]] = possibleNewFollows
@@ -150,7 +233,9 @@ Main functionality to build the table
 # Current IR: {NonTerm1 : [NT1Prod1, NT1Prod2, ...]; NonTerm2 : [...]; ...}
 # W/ ^, keyset is nonterminals, can access productions by NonTerminal ID
 
-productions = parseFile("factor.ll1")
+# Factor is good, simple candidate
+#parens-alt has people posting their solns tho, so idk...
+productions = parseFile("parens-alt.ll1")
 symbToID = getSymbolsToIDs()
 IDToSymb = getIDsToSymbols()
 
@@ -187,3 +272,21 @@ follows = getFollows(nonTerminals, terminals, productions, firsts, IDToSymb, goa
 print "===================\n\nFound follows: \n\n===================\n"
 printFirsts(follows, IDToSymb)
 
+
+# Number productions, pass in numbering to getFirstPlus
+productionsOrdered = []
+for A in productions:
+    for prod in productions[A]:
+        # Now each production A->B1B2B3 looks like [A,B1,B2,...]
+        productionsOrdered.append([A] + prod)
+
+print "Productions ordered: "
+printProductionsOrdered(productionsOrdered, IDToSymb)
+
+firstPlus = getFirstPlus(productionsOrdered, firsts, follows, nonTerminals)
+#print "Found first plus set: "
+#printFirstPlus(firstPlus, productionsOrdered, IDToSymb)
+
+# TODO: Make table
+t = getTable(nonTerminals, terminals, firstPlus)
+printTable(t, IDToSymb, terminals)
