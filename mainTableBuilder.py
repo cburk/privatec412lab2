@@ -9,8 +9,12 @@ SYMBOL=5
 EOF=6
 ERROR = -1
 
+# TODO: New rule: terminals doesn't include EOF ever
+
 def printTable(t, IDToSymb, terms):
     termsOrdered = list(terms)
+    termsOrdered.append(EOF)
+
     #TODO: Need to append EOF probably
     IDToSymb[ERROR] = '--'
 
@@ -33,13 +37,15 @@ def getTable(nonTerminals, terminals, firstPlus):
         # TODO: Need to do terminals + EOF?
         for w in terminals:
             Table[A][w] = ERROR
+            Table[A][EOF] = ERROR
 
         for producedByAID in firstPlus[A]:
             #TODO: I think these should all actually be terminals, but maybe need to check
             for w in firstPlus[A][producedByAID]:
                 Table[A][w] = producedByAID
             # I think we've got that covered
-            #if eof
+            #if EOF in firstPlus[A][producedByAID]:
+            #   Table[A][EOF] = producedByAID
 
     return Table
 
@@ -78,7 +84,7 @@ def getFirstPlus(productionsOrdered, FIRST, FOLLOW, nonTerminals):
         A = Oprod[0]
         B = Oprod[1:]
 
-        if not EPSILON in B:
+        if not EPSILON in FIRST[B[0]]:
             #Q: How to get FIRST[B] where B=B1,B2,B3,...
             #TODO: BIG assumption, saying FIRST[B] = FIRST[B0]
             FIRSTPLUS[A][i] = FIRST[B[0]]
@@ -106,7 +112,6 @@ def getFollows(nonTerminals, terminals, productions, FIRST, IDToSymb, S):
     FOLLOW = {}
     for A in nonTerminals:
         FOLLOW[A] = set()
-    # TODO: critical assumption, goal (S) is a nonterminal.  Seems right tho...
     # Answer: yep, as per piazza it's just nonterm not on the right side of anything...
     FOLLOW[S].add(EOF)
 
@@ -156,15 +161,12 @@ def printFirsts(firsts, IDToSymb):
 #def printFollows(follows, IDToSymb):
 
 
-#TODO: terminals shouldn't have EOF and EPSILON
-#TODO: Also making assumption EPSILON = empty
 def getFirsts(nonTerminals, terminals, productions, IDToSymb):
     FIRST = {}
-    # ACTUAL TODO: might need to add in epsilon and eof
-    allSymbs = terminals.union(nonTerminals).union(set([EPSILON]))
+    # Change: I don't think this should include EOF or epsilon
+    allSymbs = terminals.union(nonTerminals)
 
-    # TODO: Should be terminals U EOF U epsilon
-    for a in terminals.union(set([EPSILON])):
+    for a in terminals.union(set([EPSILON, EOF])):
         FIRST[a] = set([a])
     for A in nonTerminals:
         FIRST[A] = set()
@@ -177,31 +179,35 @@ def getFirsts(nonTerminals, terminals, productions, IDToSymb):
             AsProductions = productions[A]
             # B is each production list
             for B in AsProductions:
-                print "\n"
+                #print "Firsts for nonterminal " + IDToSymb[A] + " cur producing:"
+                #rhsStr = "\t"
+                #for symbol in B:
+                #    rhsStr += IDToSymb[symbol] + " "
+                #print rhsStr
 
                 # If there's a Bi in T U NT, so I think just not empty or EOF
+                i = 1
                 if len(set(B).intersection(allSymbs)) > 0:
-
                     # Make rhs = all first's of b0->bn where all b0->bn-1 have epsilon in firsts, i.e. could be empty
                     rhs = FIRST[B[0]].difference(set([EPSILON]))
-                    i = 0
                     # means if FIRST[B[i]].contains(EPSILON) and B[i} exists:
-                    while len(FIRST[B[i]].intersection(set([EPSILON]))) > 0 and i < len(B) - 1:
-                        i += 1
+                    while i < len(B) and len(FIRST[B[i]].intersection(set([EPSILON]))) > 0:
                         rhs = rhs.union(FIRST[B[i]].difference(set([EPSILON])))
+                        i += 1
                     # TODO: Check, I assume we're actually supposed to have these 2 statements inside
                     # the if, but not sure.  I isn't defined out there so idk what that would even mean
 
-                    # If all up to the last produced element in B could be empty, empty is a valid first
-                    # Like above, means if FIRST[B[i]].contains(EPSILON):
-                    if i == len(B) - 1 and len(FIRST[B[i]].intersection(set([EPSILON]))) > 0:
-                        rhs.add(EPSILON)
+                # If all up to the last produced element in B could be empty, empty is a valid first
+                # Like above, means if FIRST[B[i]].contains(EPSILON):
+                # Alternatively, now also means if this production is just epsilon
+                if i == len(B) and len(FIRST[B[i - 1]].intersection(set([EPSILON]))) > 0:
+                    rhs.add(EPSILON)
 
-                    # Update FIRSTS to include the possible RHS's from this production IF THEYVE CHANGED
-                    possibleNewFirsts = FIRST[A].union(rhs)
-                    if len(possibleNewFirsts) != len(FIRST[A]):
-                        changing=True
-                        FIRST[A] = possibleNewFirsts
+                # Update FIRSTS to include the possible RHS's from this production IF THEYVE CHANGED
+                possibleNewFirsts = FIRST[A].union(rhs)
+                if len(possibleNewFirsts) != len(FIRST[A]):
+                    changing=True
+                    FIRST[A] = possibleNewFirsts
 
             #TODO: Check that first sets changed this iteration
             # TODO: Thought, just change to false at start of it, make true inside of if statement?
@@ -235,7 +241,8 @@ Main functionality to build the table
 
 # Factor is good, simple candidate
 #parens-alt has people posting their solns tho, so idk...
-productions = parseFile("parens-alt.ll1")
+# Even better, sbn and iloc have sample tables online
+productions = parseFile("sbn.ll1")
 symbToID = getSymbolsToIDs()
 IDToSymb = getIDsToSymbols()
 
@@ -256,6 +263,7 @@ for key in IDToSymb:
 terminals = allSymbs.difference(nonTerminals)
 #Need to remove EPSILON and EOF for building tables
 terminals.remove(EPSILON)
+terminals.remove(EOF)
 
 print "\nTerminals: "
 printSymbSet(terminals, IDToSymb)
