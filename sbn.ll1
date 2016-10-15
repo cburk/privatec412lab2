@@ -1,0 +1,22 @@
+Number
+  : Sign List
+  ;
+
+Sign
+  : PLUS
+  | MINUS
+  ;
+
+List
+  : Bit ListPrime
+  ;
+
+ListPrime
+  : Bit ListPrime
+  | EPSILON
+  ;
+
+Bit
+  : ZERO
+  | ONE
+  ;
