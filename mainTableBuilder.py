@@ -1,3 +1,4 @@
+import sys
 from mbnfParser import parseFile
 from scanner import getSymbolsToIDs, getIDsToSymbols
 
@@ -242,7 +243,29 @@ Main functionality to build the table
 # Factor is good, simple candidate
 #parens-alt has people posting their solns tho, so idk...
 # Even better, sbn and iloc have sample tables online
-productions = parseFile("sbn.ll1")
+sFlagPrinting = False
+if len(sys.argv) > 1:
+    if sys.argv[1] == '-h':
+        prStr = "Command Line Args: "
+        prStr += "-h: Show help"
+        prStr += "-t <filename>: produces a YAML formatted parsing table for the grammar specified in filename"
+        prStr += "-s <filename>: outputs the first, follow, and first+ sets for the grammar specified in filename"
+        print prStr
+    if len(sys.argv) > 2:
+        if sys.argv[1] == '-s':
+            sFlagPrinting = True
+        # Incorrect args, if none of the above
+        elif sys.argv[1] != '-t':
+            sys.stderr.write("Error, incorrect arg: " + sys.argv[1])
+            exit()
+else:
+    sys.stderr.write("Error, 0 args given")
+    exit()
+
+filename = sys.argv[2]
+
+productions = parseFile(filename)
+
 symbToID = getSymbolsToIDs()
 IDToSymb = getIDsToSymbols()
 
