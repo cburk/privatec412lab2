@@ -44,9 +44,9 @@ def getTable(nonTerminals, terminals, firstPlus):
             #TODO: I think these should all actually be terminals, but maybe need to check
             for w in firstPlus[A][producedByAID]:
                 Table[A][w] = producedByAID
-            # I think we've got that covered
-            #if EOF in firstPlus[A][producedByAID]:
-            #   Table[A][EOF] = producedByAID
+                # I think we've got that covered
+                #if EOF in firstPlus[A][producedByAID]:
+                #   Table[A][EOF] = producedByAID
 
     return Table
 
@@ -186,17 +186,29 @@ def getFirsts(nonTerminals, terminals, productions, IDToSymb):
                 #    rhsStr += IDToSymb[symbol] + " "
                 #print rhsStr
 
+                debugzz = False
+                #if IDToSymb[A] == "Factor":
+                #print "Setting A's firsts"
+                #debugzz = True
+
                 # If there's a Bi in T U NT, so I think just not empty or EOF
                 i = 1
                 if len(set(B).intersection(allSymbs)) > 0:
                     # Make rhs = all first's of b0->bn where all b0->bn-1 have epsilon in firsts, i.e. could be empty
                     rhs = FIRST[B[0]].difference(set([EPSILON]))
+                    if debugzz:
+                        print "RHS After B[0] of " + IDToSymb[B[0]]
+                        printSymbSet(rhs, IDToSymb, "RHS")
+                        print "Epsilon in firsts of B[0]? " + str(EPSILON in FIRST[B[0]])
+
                     # means if FIRST[B[i]].contains(EPSILON) and B[i} exists:
-                    while i < len(B) and len(FIRST[B[i]].intersection(set([EPSILON]))) > 0:
+                    while i < len(B) and len(FIRST[B[i-1]].intersection(set([EPSILON]))) > 0:
+                        if debugzz:
+                            print "Epsilon in last guy's firsts, gotta add more"
                         rhs = rhs.union(FIRST[B[i]].difference(set([EPSILON])))
                         i += 1
-                    # TODO: Check, I assume we're actually supposed to have these 2 statements inside
-                    # the if, but not sure.  I isn't defined out there so idk what that would even mean
+                        # TODO: Check, I assume we're actually supposed to have these 2 statements inside
+                        # the if, but not sure.  I isn't defined out there so idk what that would even mean
 
                 # If all up to the last produced element in B could be empty, empty is a valid first
                 # Like above, means if FIRST[B[i]].contains(EPSILON):
@@ -207,11 +219,15 @@ def getFirsts(nonTerminals, terminals, productions, IDToSymb):
                 # Update FIRSTS to include the possible RHS's from this production IF THEYVE CHANGED
                 possibleNewFirsts = FIRST[A].union(rhs)
                 if len(possibleNewFirsts) != len(FIRST[A]):
+                    if debugzz:
+                        printSymbSet(FIRST[A], IDToSymb, "First Before")
+                        printSymbSet(possibleNewFirsts, IDToSymb, "Possible News")
+                        print "\n"
                     changing=True
                     FIRST[A] = possibleNewFirsts
 
-            #TODO: Check that first sets changed this iteration
-            # TODO: Thought, just change to false at start of it, make true inside of if statement?
+                    #TODO: Check that first sets changed this iteration
+                    # TODO: Thought, just change to false at start of it, make true inside of if statement?
     return FIRST
 
 # Need to factor in EPSILON somehow, since it's important for productions but not a symbol
@@ -226,11 +242,14 @@ def printProductions(prods, IDToSymb):
                 rhsStr += IDToSymb[symbol] + " "
             print rhsStr
 
-def printSymbSet(mySet, mapping):
-    retStr = "("
+def printSymbSet(mySet, mapping, setName):
+    retStr = setName + ": ["
+    if len(mySet) == 0:
+        print retStr + " ]"
+        return
     for el in mySet:
         retStr += mapping[el] + ", "
-    print retStr[:-2] + ")"
+    print retStr[:-2] + "]"
 
 """
 Main functionality to build the table
@@ -244,6 +263,9 @@ Main functionality to build the table
 #parens-alt has people posting their solns tho, so idk...
 # Even better, sbn and iloc have sample tables online
 sFlagPrinting = False
+tFlagPrinting = False
+debugging = False
+
 if len(sys.argv) > 1:
     if sys.argv[1] == '-h':
         prStr = "Command Line Args: "
@@ -255,30 +277,39 @@ if len(sys.argv) > 1:
         if sys.argv[1] == '-s':
             sFlagPrinting = True
         # Incorrect args, if none of the above
-        elif sys.argv[1] != '-t':
+        if sys.argv[1] == '-t':
+            tFlagPrinting = True
+        else:
             sys.stderr.write("Error, incorrect arg: " + sys.argv[1])
             exit()
 else:
     sys.stderr.write("Error, 0 args given")
     exit()
 
-filename = sys.argv[2]
+# debugging purposes, TODO: Commeknt out!
+#sFlagPrinting = False
+#tFlagPrinting = False
 
+filename = sys.argv[2]
 productions = parseFile(filename)
 
 symbToID = getSymbolsToIDs()
 IDToSymb = getIDsToSymbols()
 
-print "Productions: "
-printProductions(productions, IDToSymb)
+# Number productions, pass in numbering to getFirstPlus
+productionsOrdered = []
+for A in productions:
+    for prod in productions[A]:
+        # Now each production A->B1B2B3 looks like [A,B1,B2,...]
+        productionsOrdered.append([A] + prod)
+
+#print "Productions ordered: "
+#printProductionsOrdered(productionsOrdered, IDToSymb)
 
 # Everything uses id's, only use symbols for printing
 nonTerminals = set()
 for key in productions:
     nonTerminals.add(key)
-
-print "\nNonterminals: "
-printSymbSet(nonTerminals, IDToSymb)
 
 allSymbs = set()
 for key in IDToSymb:
@@ -288,36 +319,42 @@ terminals = allSymbs.difference(nonTerminals)
 terminals.remove(EPSILON)
 terminals.remove(EOF)
 
-print "\nTerminals: "
-printSymbSet(terminals, IDToSymb)
+goalSymbol = findGoalSymbol(productions, nonTerminals)
+#print "\n\nFound goal symbol: " + IDToSymb[goalSymbol]
+
+#print "Productions: "
+if tFlagPrinting:
+    #print "\nTerminals: "
+    printSymbSet(terminals, IDToSymb, "terminals")
+    #print "\nNonterminals: "
+    printSymbSet(nonTerminals, IDToSymb, 'non-terminals')
+    print "eof-marker: " + IDToSymb[EOF]
+    print "error-marker: --"
+    print "start-symbol: " + IDToSymb[goalSymbol] + "\n"
+
+    printProductionsOrdered(productionsOrdered, IDToSymb)
+    print ''
 
 firsts = getFirsts(nonTerminals, terminals, productions, IDToSymb)
 
-print "===================\n\nFound firsts: \n\n===================\n"
-printFirsts(firsts, IDToSymb)
-
-goalSymbol = findGoalSymbol(productions, nonTerminals)
-print "\n\nFound goal symbol: " + IDToSymb[goalSymbol]
+if sFlagPrinting:
+    print "===================\n\nFound firsts: \n\n===================\n"
+    printFirsts(firsts, IDToSymb)
 
 follows = getFollows(nonTerminals, terminals, productions, firsts, IDToSymb, goalSymbol)
-print "===================\n\nFound follows: \n\n===================\n"
-printFirsts(follows, IDToSymb)
 
+if sFlagPrinting:
+    print "===================\n\nFound follows: \n\n===================\n"
+    printFirsts(follows, IDToSymb)
 
-# Number productions, pass in numbering to getFirstPlus
-productionsOrdered = []
-for A in productions:
-    for prod in productions[A]:
-        # Now each production A->B1B2B3 looks like [A,B1,B2,...]
-        productionsOrdered.append([A] + prod)
-
-print "Productions ordered: "
-printProductionsOrdered(productionsOrdered, IDToSymb)
 
 firstPlus = getFirstPlus(productionsOrdered, firsts, follows, nonTerminals)
-#print "Found first plus set: "
-#printFirstPlus(firstPlus, productionsOrdered, IDToSymb)
+
+if sFlagPrinting:
+    print "===================\n\nFound first+: \n\n===================\n"
+    printFirstPlus(firstPlus, productionsOrdered, IDToSymb)
 
 # TODO: Make table
 t = getTable(nonTerminals, terminals, firstPlus)
-printTable(t, IDToSymb, terminals)
+if tFlagPrinting:
+    printTable(t, IDToSymb, terminals)

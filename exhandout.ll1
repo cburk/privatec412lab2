@@ -1,0 +1,12 @@
+Goal : Expr;
+Expr : Term ExprPrime;
+ExprPrime : PLUS Term ExprPrime
+    | MINUS Term ExprPrime
+    | EPSILON;
+Term : Factor TermPrime;
+TermPrime : MULTIPLY Factor TermPrime
+    | DIVIDES Factor TermPrime
+    | EPSILON;
+Factor : OPENPAREN Expr CLOSEPAREN
+    | num
+    | name;
