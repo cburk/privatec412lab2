@@ -64,12 +64,16 @@ def printFirstPlus(firstPlus, productionsOrdered, IDToSymb):
         print prStr
 
 def printProductionsOrdered(productionsOrdered, IDToSymb):
+    print "productions:"
     for i in range(len(productionsOrdered)):
         thisProd = productionsOrdered[i]
         printStr = str(i) + ": {" + IDToSymb[thisProd[0]] + ": ["
-        for j in range(len(thisProd) - 1):
-            printStr += IDToSymb[thisProd[1+j]] + ", "
-        print printStr[:-2] + "]}"
+        if thisProd[1] == EPSILON:
+            print printStr + "]}"
+        else:
+            for j in range(len(thisProd) - 1):
+                printStr += IDToSymb[thisProd[1+j]] + ", "
+            print printStr[:-2] + "]}"
 
 # First+ of form: {A:{B:(nt1, nt2, ...), B2:(...
 # (Sets, not lists.  Not problematic tho, only productions care about ordering)

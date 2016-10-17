@@ -69,7 +69,6 @@ def readNextWord():
                                 thisChar = file.read(1)
                                 strThisFar += thisChar
                                 if thisChar == 'N' or thisChar == 'n':
-                                    print "n"
                                     return [EPSILON, EPSILON]
             # Could be a symbol w/ a name like epsilen that would fail
             symbolName = strThisFar
