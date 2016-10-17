@@ -21,7 +21,7 @@ def printTable(t, IDToSymb, terms):
 
     print "table:"
     for nt in t:
-        prStr = IDToSymb[nt] + ": {"
+        prStr = "  " + IDToSymb[nt] + ": {"
         for term in termsOrdered:
             prStr += IDToSymb[term]
             if t[nt][term] == ERROR:
@@ -67,7 +67,7 @@ def printProductionsOrdered(productionsOrdered, IDToSymb):
     print "productions:"
     for i in range(len(productionsOrdered)):
         thisProd = productionsOrdered[i]
-        printStr = str(i) + ": {" + IDToSymb[thisProd[0]] + ": ["
+        printStr = "  " + str(i) + ": {" + IDToSymb[thisProd[0]] + ": ["
         if thisProd[1] == EPSILON:
             print printStr + "]}"
         else:
