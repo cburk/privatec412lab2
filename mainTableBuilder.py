@@ -331,17 +331,6 @@ goalSymbol = findGoalSymbol(productions, nonTerminals)
 #print "\n\nFound goal symbol: " + IDToSymb[goalSymbol]
 
 #print "Productions: "
-if tFlagPrinting:
-    #print "\nTerminals: "
-    printSymbSet(terminals, IDToSymb, "terminals")
-    #print "\nNonterminals: "
-    printSymbSet(nonTerminals, IDToSymb, 'non-terminals')
-    print "eof-marker: " + IDToSymb[EOF]
-    print "error-marker: --"
-    print "start-symbol: " + IDToSymb[goalSymbol] + "\n"
-
-    printProductionsOrdered(productionsOrdered, IDToSymb)
-    print ''
 
 firsts = getFirsts(nonTerminals, terminals, productions, IDToSymb)
 
@@ -365,4 +354,14 @@ if sFlagPrinting:
 # TODO: Make table
 t = getTable(nonTerminals, terminals, firstPlus, IDToSymb)
 if tFlagPrinting:
+    #print "\nTerminals: "
+    printSymbSet(terminals, IDToSymb, "terminals")
+    #print "\nNonterminals: "
+    printSymbSet(nonTerminals, IDToSymb, 'non-terminals')
+    print "eof-marker: " + IDToSymb[EOF]
+    print "error-marker: --"
+    print "start-symbol: " + IDToSymb[goalSymbol] + "\n"
+
+    printProductionsOrdered(productionsOrdered, IDToSymb)
+    print ''
     printTable(t, IDToSymb, terminals)
