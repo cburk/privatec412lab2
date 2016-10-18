@@ -1,4 +1,5 @@
 from scanner import openFile, readNextWord, getSymbolsToIDs
+import sys
 
 SEMICOLON=1
 DERIVES=2
@@ -40,6 +41,7 @@ def getNextWord():
         return retSym
         """
         retSym = readNextWord()
+
         #print "Scanner gave us back: " + str(retSym)
         #print "Returning: " + symbolNames[retSym[0]]
         return retSym
@@ -68,6 +70,10 @@ def SymbolList(curWord, listSoFar):
         symbolPending = curWord
         return [True, listSoFar]
 
+    # If it's not part of the RHS, or demarcating the end of an rhs, it's an error
+    sys.stderr.write("Parsing Error: expected SYMBOL or SEMICOLON or ALSODERIVES in right hand side of production, found: " + symbolNames[curWord[0]])
+    exit()
+
 
 def RightHandSide(curWord):
     """
@@ -82,11 +88,14 @@ def RightHandSide(curWord):
     if curWord[0] == EPSILON:
         return [True, [EPSILON]]
     thisList = []
+    # Builds the list of symbols in the right hand side, sets a flag if it was valid
+    # Terminates otherwise
     sl = SymbolList(curWord, thisList)
     if sl[0]:
         return sl
 
     return False
+
 
 def ProductionSetPrime(curWord, nonTerm):
     """
@@ -103,11 +112,14 @@ def ProductionSetPrime(curWord, nonTerm):
             return ProductionSetPrime(getNextWord(), nonTerm)
         else:
             return False
-    #print "empty case: " + symbolNames[curWord[0]]
     # Empty case, if no other things being derived, should be a SEMICOLON
     if curWord[0] == SEMICOLON:
         symbolPending = curWord
         return True
+    # Otherwise, we're neither at the end of a prod set or properly forming one, error
+    else:
+        sys.stderr.write("Incorrect terminating symbol for production set: " + symbolNames[curWord[0]])
+        exit()
 
 def ProductionSet(curWord):
     """
@@ -120,13 +132,18 @@ def ProductionSet(curWord):
         curNonTerm = curWord[1]
         productionsIR[curNonTerm] = []
 
-        if getNextWord()[0] == DERIVES:
+        thisNewWord = getNextWord()
+        if thisNewWord[0] == DERIVES:
             # Expect RHS to return a tuple of [T/F, [symb1, symb2, symb3]]
             rhs = RightHandSide(getNextWord())
             if rhs[0]:
                 # Add this rhs as a production of curNonTerm, have PS' do the same
                 productionsIR[curNonTerm].append(rhs[1])
                 return ProductionSetPrime(getNextWord(), curNonTerm)
+        else:
+            sys.stderr.write("Parsing Error: Producing symbol must be followed by ':' (produces)\n")
+            sys.stderr.write("Instead found symbol: " + symbolNames[thisNewWord[0]])
+            exit()
     return False
 
 
@@ -139,11 +156,16 @@ def ProductionListPrime(curWord):
 
     if(ProductionSet(curWord)):
         if getNextWord()[0] != SEMICOLON:
-            return False
+            sys.stderr.write("Parsing Error: Production sets must end with ';'\n")
+            exit()
         return ProductionListPrime(getNextWord())
 
     # Empty case, last item of full list is EOF
-    return curWord[0] == EOF
+    if curWord[0] == EOF:
+        return True
+    else:
+        sys.stderr.write("Parsing Error: Production list must end with EOF\n")
+        exit()
 
 def ProductionList(curWord):
     """
@@ -154,7 +176,8 @@ def ProductionList(curWord):
     if not ProductionSet(curWord):
         return False
     if getNextWord()[0] != SEMICOLON:
-        return False
+        sys.stderr.write("Parsing Error: Expected ';' after production list\n")
+        exit()
     return ProductionListPrime(getNextWord())
 
 
@@ -172,8 +195,8 @@ def parseFile(fileName):
     if Grammar():
         return productionsIR
     else:
-        print "\n\nError! Parser found invalid grammar\n\n"
-        return False
+        sys.stderr.write("\n\nError! Parser found invalid grammar\n\n")
+        exit()
 
 
 

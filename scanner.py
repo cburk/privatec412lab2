@@ -1,3 +1,5 @@
+import sys
+
 SEMICOLON=1
 DERIVES=2
 ALSODERIVES=3
@@ -114,7 +116,8 @@ def readNextWord():
 
             return [SYMBOL, symbolToID[symbolName]]
         else:
-            return -1
+            sys.stderr.write("Error scanning, found character: " + thisChar)
+            exit()
 
 def getSymbolsToIDs():
     global symbolToID
