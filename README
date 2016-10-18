@@ -8,18 +8,17 @@ Simply execute the script llgen
 with the proper arguments. These
 arguments are:
 
-<Arguments>
+./llgen -h
+    Prints out a list of the arguments
+./llgen -t <Filename>
+    Produces an ll1 parse table in yaml
+    for the grammar specified in Filename
+./llgen -s <Filename>
+    Prints out the productions, first, follows,
+    and first+ sets for the grammar specified
+    in Filename
 
 The hand coded mbnf parser is
 located at mbnfParser.py. The
 scanner it uses to read symbols
 is at scanner.py.
-
-<TODO: Comment it really
-clearly!!!>
-
-<Also TODO: Have it output
-meaningful error messages>
-
-<Also Also TODO: Check if
-ll1 grammars are valid>
