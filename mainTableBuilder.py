@@ -31,18 +31,24 @@ def printTable(t, IDToSymb, terms):
         print prStr[:-2] + "}"
 
 
-def getTable(nonTerminals, terminals, firstPlus):
+def getTable(nonTerminals, terminals, firstPlus, IDToSymb):
     Table = {}
     for A in nonTerminals:
         Table[A] = {}
         # TODO: Need to do terminals + EOF?
-        for w in terminals:
+        for w in terminals.union(set([EPSILON])):
             Table[A][w] = ERROR
             Table[A][EOF] = ERROR
 
         for producedByAID in firstPlus[A]:
             #TODO: I think these should all actually be terminals, but maybe need to check
             for w in firstPlus[A][producedByAID]:
+                # If there are two productions from A w/ same first, we won't know which to do, i.e. needs lookahead of 2.
+                # Error
+                if Table[A][w] != ERROR:
+                    sys.stderr.write("Error! Grammar not ll1, " + IDToSymb[A] + " produces " + IDToSymb[w] + " in productions " + str(producedByAID) + " and " + str(Table[A][w]) + "\n")
+                    exit()
+
                 Table[A][w] = producedByAID
                 # I think we've got that covered
                 #if EOF in firstPlus[A][producedByAID]:
@@ -230,8 +236,6 @@ def getFirsts(nonTerminals, terminals, productions, IDToSymb):
                     changing=True
                     FIRST[A] = possibleNewFirsts
 
-                    #TODO: Check that first sets changed this iteration
-                    # TODO: Thought, just change to false at start of it, make true inside of if statement?
     return FIRST
 
 # Need to factor in EPSILON somehow, since it's important for productions but not a symbol
@@ -359,6 +363,6 @@ if sFlagPrinting:
     printFirstPlus(firstPlus, productionsOrdered, IDToSymb)
 
 # TODO: Make table
-t = getTable(nonTerminals, terminals, firstPlus)
+t = getTable(nonTerminals, terminals, firstPlus, IDToSymb)
 if tFlagPrinting:
     printTable(t, IDToSymb, terminals)
